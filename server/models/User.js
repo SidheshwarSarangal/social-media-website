@@ -29,12 +29,19 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
     },
+    contactNumber: {
+        type:Number,
+        trim:true,
+    },
     followers: [{ 
         type: mongoose.Schema.Types.ObjectId, ref: 'User' 
     }],
     following: [{ 
         type: mongoose.Schema.Types.ObjectId, ref: 'User' 
-    }]
+    }],
+    resetPasswordExpires: {
+        type:Date,
+    },
 
 });
 
