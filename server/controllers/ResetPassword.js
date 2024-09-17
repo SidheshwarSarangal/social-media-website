@@ -1,4 +1,4 @@
-const User = require("../modls/User");
+const User = require("../models/User");
 const mailSender = require("../utils/mailSender");
 
 exports.resetPasswordToken = async (req, res) => {
