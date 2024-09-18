@@ -1,21 +1,17 @@
 const mongoose = require("mongoose");
 
-const ChatSchema = new mongoose.Schema({
+const chatSchema = new mongoose.Schema({
     participants: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref:"User"
+        ref: "User"
     }],
     messages: [{
-        sender: {type:mongoose.Schema.Types.ObjectId,
-            ref:"User"
+        sender: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
         },
-        text: {
-            type:String
-        },
-        timestamp: {
-            type:Date,
-            default: Date.now
-        }
+        text: { type: String },
+        timestamp: { type: Date, default: Date.now }
     }]
 });
 

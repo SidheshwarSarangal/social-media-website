@@ -1,18 +1,18 @@
-const express = require("express")
-const router = express.Router()
-const { auth } = require("../middlewares/auth")
-const {
-    deleteAccount,
-    updateProfile,
-    getAllUserDetails,
-} = require("../controllers/Profile")
+const express = require('express');
+const router = express.Router();
+const profileController = require('../controllers/Profile');
+const authMiddleware = require('../middlewares/auth');
 
-router.delete("/deleteProfile", auth, deleteAccount)
-router.put("/updateProfile", auth, updateProfile)
-router.get("/getUserDetails", auth, getAllUserDetails)
-// Get Enrolled Courses
+// Update Profile
+router.put('/update', authMiddleware.auth, profileController.updateProfile);
 
+// Delete Account
+router.delete('/delete', authMiddleware.auth, profileController.deleteAccount);
 
+// Get User Details
+router.get('/details', authMiddleware.auth, profileController.getUserDetails);
 
+// Update Display Picture
+router.put('/update-picture', authMiddleware.auth, profileController.updateDisplayPicture);
 
-module.exports = router
+module.exports = router;

@@ -1,80 +1,68 @@
 const User = require('../models/User');
-const mongoose = require('mongoose');
 
-// Follow a user
+// Follow User
 exports.followUser = async (req, res) => {
     try {
-        // Extract userId from the authenticated session/token (e.g., req.user._id)
-        const userId = req.user._id;  // Assuming req.user contains the authenticated user's ID
-        const { targetId } = req.body;  // targetId is the ID of the user to follow
+        const { userId } = req.params;
+        const currentUserId = req.user.id;
 
-        // Validate user IDs
-        if (!mongoose.Types.ObjectId.isValid(targetId)) {
-            return res.status(400).json({ message: 'Invalid target user ID' });
+        if (userId === currentUserId) {
+            return res.status(400).json({ success: false, message: "Cannot follow yourself." });
         }
 
-        // Check if the target user exists
-        const targetUser = await User.findById(targetId);
+        const userToFollow = await User.findById(userId);
+        const currentUser = await User.findById(currentUserId);
 
-        if (!targetUser) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!userToFollow || !currentUser) {
+            return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        // Check if the user is already following the target user
-        const user = await User.findById(userId);
-        if (user.following.includes(targetId)) {
-            return res.status(400).json({ message: 'You are already following this user' });
+        if (currentUser.following.includes(userId)) {
+            return res.status(400).json({ success: false, message: "You are already following this user." });
         }
 
-        // Add the target user to the following list of the user and the user to the followers list of the target user
-        user.following.push(targetId);
-        targetUser.followers.push(userId);
+        currentUser.following.push(userId);
+        userToFollow.followers.push(currentUserId);
 
-        // Save both users
-        await user.save();
-        await targetUser.save();
+        await currentUser.save();
+        await userToFollow.save();
 
-        res.status(200).json({ message: 'Followed successfully' });
+        return res.status(200).json({ success: true, message: "User followed successfully." });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to follow user', error });
+        return res.status(500).json({ success: false, message: "Error following user.", error });
     }
 };
 
-// Unfollow a user
+// Unfollow User
+// Unfollow User
 exports.unfollowUser = async (req, res) => {
     try {
-        // Extract userId from the authenticated session/token (e.g., req.user._id)
-        const userId = req.user._id;  // Assuming req.user contains the authenticated user's ID
-        const { targetId } = req.body;  // targetId is the ID of the user to unfollow
+        const { userId } = req.params;
+        const currentUserId = req.user.id;
 
-        // Validate user IDs
-        if (!mongoose.Types.ObjectId.isValid(targetId)) {
-            return res.status(400).json({ message: 'Invalid target user ID' });
+        if (userId === currentUserId) {
+            return res.status(400).json({ success: false, message: "Cannot unfollow yourself." });
         }
 
-        // Check if the target user exists
-        const targetUser = await User.findById(targetId);
+        const userToUnfollow = await User.findById(userId);
+        const currentUser = await User.findById(currentUserId);
 
-        if (!targetUser) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!userToUnfollow || !currentUser) {
+            return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        // Check if the user is following the target user
-        const user = await User.findById(userId);
-        if (!user.following.includes(targetId)) {
-            return res.status(400).json({ message: 'You are not following this user' });
+        if (!currentUser.following.includes(userId)) {
+            return res.status(400).json({ success: false, message: "You are not following this user." });
         }
 
-        // Remove the target user from the following list of the user and the user from the followers list of the target user
-        user.following = user.following.filter((id) => id.toString() !== targetId);
-        targetUser.followers = targetUser.followers.filter((id) => id.toString() !== userId);
+        currentUser.following.pull(userId);
+        userToUnfollow.followers.pull(currentUserId);
 
-        // Save both users
-        await user.save();
-        await targetUser.save();
+        await currentUser.save();
+        await userToUnfollow.save();
 
-        res.status(200).json({ message: 'Unfollowed successfully' });
+        return res.status(200).json({ success: true, message: "User unfollowed successfully." });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to unfollow user', error });
+        return res.status(500).json({ success: false, message: "Error unfollowing user.", error });
     }
 };

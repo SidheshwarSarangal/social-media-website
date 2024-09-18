@@ -1,116 +1,75 @@
-const Profile = require("../models/Profile");
-const User = require("../models/User");
+const User = require('../models/User');
 
-// Update profile for the logged-in user
+// Update Profile
 exports.updateProfile = async (req, res) => {
     try {
-        const { dateOfBirth = "", about = "", gender = "" } = req.body;
-        const userId = req.user._id; // Logged-in user ID from the authentication middleware
+        const userId = req.user.id;
+        const { firstName, lastName, contactNumber } = req.body;
 
-        // Validate required fields
-        if (!gender) {
-            return res.status(400).json({
-                success: false,
-                message: 'Gender is required',
-            });
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        // Find the logged-in user's details
-        const userDetails = await User.findById(userId);
-        if (!userDetails) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
-        }
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.contactNumber = contactNumber || user.contactNumber;
 
-        // Find the user's profile based on the additionalDetails field
-        const profileId = userDetails.additionalDetails;
-        const profileDetails = await Profile.findById(profileId);
-        if (!profileDetails) {
-            return res.status(404).json({
-                success: false,
-                message: 'Profile not found',
-            });
-        }
+        await user.save();
 
-        // Update profile fields
-        profileDetails.dateOfBirth = dateOfBirth;
-        profileDetails.about = about;
-        profileDetails.gender = gender;
-
-        await profileDetails.save(); // Save the updated profile
-
-        return res.status(200).json({
-            success: true,
-            message: 'Profile updated successfully',
-            profileDetails,
-        });
-
+        return res.status(200).json({ success: true, message: "Profile updated successfully.", user });
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message,
-        });
+        return res.status(500).json({ success: false, message: "Error updating profile.", error });
     }
 };
 
-// Delete account for the logged-in user
+// Delete Account
 exports.deleteAccount = async (req, res) => {
     try {
-        const userId = req.user._id; // Logged-in user ID from the authentication middleware
+        const userId = req.user.id;
 
-        // Find the logged-in user's details
-        const userDetails = await User.findById(userId);
-        if (!userDetails) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        // Delete the user's profile
-        await Profile.findByIdAndDelete(userDetails.additionalDetails);
-        // Delete the user's account
-        await User.findByIdAndDelete(userId);
-
-        return res.status(200).json({
-            success: true,
-            message: 'User account deleted successfully',
-        });
-
+        await user.remove();
+        return res.status(200).json({ success: true, message: "Account deleted successfully." });
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to delete user account',
-        });
+        return res.status(500).json({ success: false, message: "Error deleting account.", error });
     }
 };
 
-// Get details of the logged-in user
-exports.getAllUserDetails = async (req, res) => {
+// Get User Details
+exports.getUserDetails = async (req, res) => {
     try {
-        const userId = req.user._id; // Logged-in user ID from the authentication middleware
+        const userId = req.user.id;
+        const user = await User.findById(userId).populate('additionalDetails');
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Error fetching user details.", error });
+    }
+};
 
-        // Find the logged-in user's details and populate profile information
-        const userDetails = await User.findById(userId).populate("additionalDetails").exec();
-        if (!userDetails) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found',
-            });
+// Update Display Picture
+exports.updateDisplayPicture = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { imageUrl } = req.body; // Assuming the image URL is sent in the request body
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        return res.status(200).json({
-            success: true,
-            message: 'User details fetched successfully',
-            userDetails,
-        });
+        user.image = imageUrl || user.image;
+        await user.save();
 
+        return res.status(200).json({ success: true, message: "Display picture updated successfully.", user });
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        return res.status(500).json({ success: false, message: "Error updating display picture.", error });
     }
 };

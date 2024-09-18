@@ -1,3 +1,30 @@
+/*const nodemailer = require('nodemailer');
+require('dotenv').config();
+
+const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+    }
+});
+
+module.exports = async function sendMail(email, subject, text) {
+    try {
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_USER,
+            to: email,
+            subject,
+            text
+        });
+        return info;
+    } catch (error) {
+        console.error("Error sending email", error);
+    }
+};
+*/
+
+
 const nodemailer = require("nodemailer")
 
 const mailSender = async (email, title, body) => {
