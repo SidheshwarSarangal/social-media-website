@@ -56,5 +56,6 @@ router.delete('/delete/:postId', authMiddleware.auth, postController.deletePost)
 router.post('/like/:postId', authMiddleware.auth, postController.likePost);
 router.post('/unlike/:postId', authMiddleware.auth, postController.unlikePost);
 router.post('/comment/:postId', authMiddleware.auth, check('text').notEmpty().withMessage('Text is required'), postController.commentOnPost);
+router.delete('/comment/:postId/:commentId', authMiddleware.auth, postController.deleteCommentOnPost);
 
 module.exports = router;

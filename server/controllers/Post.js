@@ -189,34 +189,37 @@ exports.commentOnPost = async (req, res) => {
     }
 };
 
-
+// Controller to delete a comment on a post
 exports.deleteCommentOnPost = async (req, res) => {
     try {
-        const { postId, commentId } = req.params;
-        const userId = req.user.id;
+        const { postId, commentId } = req.params; // Extract postId and commentId from the request params
+        const userId = req.user.id; // The logged-in user's ID
 
+        // Find the post by postId
         const post = await Post.findById(postId);
         if (!post) {
             return res.status(404).json({ success: false, message: "Post not found." });
         }
 
-        // Find the comment
+        // Find the comment within the post's comments array
         const comment = post.comments.id(commentId);
         if (!comment) {
             return res.status(404).json({ success: false, message: "Comment not found." });
         }
 
-        // Check if the user is the owner of the comment
+        // Ensure that the logged-in user is the owner of the comment
         if (comment.user.toString() !== userId) {
             return res.status(403).json({ success: false, message: "Not authorized to delete this comment." });
         }
 
-        // Remove comment
-        comment.remove();
+        // Remove the comment from the comments array
+        post.comments.pull(commentId);// Mongoose method to remove subdocument
+
+        // Save the post after removing the comment
         await post.save();
 
         return res.status(200).json({ success: true, message: "Comment deleted successfully.", post });
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Error deleting comment.", error });
+        return res.status(500).json({ success: false, message: "Error deleting comment.", error: error.message });
     }
 };
