@@ -3,8 +3,19 @@ const router = express.Router();
 const postController = require('../controllers/Post');
 const authMiddleware = require('../middlewares/auth');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); // Set up multer to handle file uploads
+//const upload = multer({ dest: 'uploads/' }); // Set up multer to handle file uploads
+const { check } = require('express-validator');
 
+const upload = multer({ dest: 'uploads/' }); // Set up multer for file uploads
+
+// Routes for posts
+router.post(
+    '/create',
+    authMiddleware.auth,
+    upload.single('file'), // Handle file uploads
+    check('caption').notEmpty().withMessage('Caption is required'),
+    postController.createPost
+);
 
 
 
@@ -39,28 +50,11 @@ router.post("/reset-password", resetPassword)
 
 
 
-
-
-
-
-
-
-// Create Post
-router.post('/create', authMiddleware.auth, upload.single('image'), postController.createPost);
-
-// Get All Posts
-router.get('/', authMiddleware.auth, postController.getAllPosts);
-
-// Update Post
-router.put('/:postId/update', authMiddleware.auth, postController.updatePost);
-
-// Delete Post
-router.delete('/:postId/delete', authMiddleware.auth, postController.deletePost);
-
-// Like/Unlike Post
-router.put('/:postId/like', authMiddleware.auth, postController.likePost);
-
-// Comment on Post
-router.post('/:postId/comment', authMiddleware.auth, postController.commentOnPost);
+router.get('/', postController.getAllPosts);
+router.put('/update/:postId', authMiddleware.auth, upload.single('file'), postController.updatePost);
+router.delete('/delete/:postId', authMiddleware.auth, postController.deletePost);
+router.post('/like/:postId', authMiddleware.auth, postController.likePost);
+router.post('/unlike/:postId', authMiddleware.auth, postController.unlikePost);
+router.post('/comment/:postId', authMiddleware.auth, check('text').notEmpty().withMessage('Text is required'), postController.commentOnPost);
 
 module.exports = router;

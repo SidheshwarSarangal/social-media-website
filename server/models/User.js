@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
     contactNumber: { type: Number, trim: true },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    token:{type:String},
+    resetPasswordExpires:{type:Date},
     resetPasswordExpires: { type: Date }
 });
 

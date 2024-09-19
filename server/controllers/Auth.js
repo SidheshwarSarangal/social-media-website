@@ -143,7 +143,7 @@ exports.login = async (req, res) => {
 
 // Change Password
 
-/*
+
 exports.changePassword = async (req, res) => {
     try {
         const { email, newPassword } = req.body;
@@ -166,7 +166,7 @@ exports.changePassword = async (req, res) => {
         return res.status(500).json({ success: false, message: "Error changing password.", error });
     }
 };
-*/
+
 
 
 exports.changePassword = async (req, res) => {

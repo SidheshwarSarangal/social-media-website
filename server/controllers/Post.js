@@ -1,14 +1,30 @@
 const Post = require('../models/Post');
-const cloudinary = require('../config/cloudinary');
+const { uploadImage, destroyImage } = require('../config/cloudinary');  // Correct import
+const { validationResult } = require('express-validator');
+const fs = require('fs');
 
 // Create Post
 exports.createPost = async (req, res) => {
     try {
+        // Validate request input
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { caption } = req.body;
         const userId = req.user.id;
-        
+
+        // Validate if image exists
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Image is required." });
+        }
+
         // Upload image to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path);
+        console.log("-----------------------------------------")
+        console.log(req.file.path);
+
+        const result = await uploadImage(req.file.path);  // Use await here
 
         // Create a new post
         const newPost = new Post({
@@ -20,9 +36,11 @@ exports.createPost = async (req, res) => {
         await newPost.save();
         return res.status(201).json({ success: true, post: newPost });
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Error creating post.", error });
+        console.error("Error creating post:", error);  // Log error for debugging
+        return res.status(500).json({ success: false, message: "Error creating post.", error: error.message });
     }
 };
+
 
 // Get All Posts
 exports.getAllPosts = async (req, res) => {
@@ -50,6 +68,13 @@ exports.updatePost = async (req, res) => {
             return res.status(403).json({ success: false, message: "Not authorized to update this post." });
         }
 
+        // If new image is uploaded, update it
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            post.image = result.secure_url;
+            fs.unlinkSync(req.file.path); // Optionally delete local file
+        }
+
         post.caption = caption || post.caption;
         await post.save();
 
@@ -74,14 +99,24 @@ exports.deletePost = async (req, res) => {
             return res.status(403).json({ success: false, message: "Not authorized to delete this post." });
         }
 
-        await post.remove();
+        // Delete image from Cloudinary
+        if (post.image_public_id) {
+            await destroyImage(post.image_public_id);
+        }
+       // console.log(post);
+
+        //await post.remove();
+        await Post.deleteOne({ _id: postId });
+       // console.log("-----------------");
+
         return res.status(200).json({ success: true, message: "Post deleted successfully." });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Error deleting post.", error });
     }
 };
 
-// Like Post
+// Like/Unlike Post
+
 exports.likePost = async (req, res) => {
     try {
         const { postId } = req.params;
@@ -92,20 +127,47 @@ exports.likePost = async (req, res) => {
             return res.status(404).json({ success: false, message: "Post not found." });
         }
 
+        // Check if the user has already liked the post
         if (post.likes.includes(userId)) {
-            post.likes.pull(userId);
-        } else {
-            post.likes.push(userId);
+            return res.status(400).json({ success: false, message: "Post already liked." });
         }
 
+        // Add user to likes array
+        post.likes.push(userId);
         await post.save();
-        return res.status(200).json({ success: true, message: "Post liked/unliked successfully.", post });
+
+        return res.status(200).json({ success: true, message: "Post liked successfully.", post });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Error liking post.", error });
     }
 };
 
-// Comment on Post
+exports.unlikePost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const userId = req.user.id;
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ success: false, message: "Post not found." });
+        }
+
+        // Check if the user has liked the post
+        if (!post.likes.includes(userId)) {
+            return res.status(400).json({ success: false, message: "Post not liked yet." });
+        }
+
+        // Remove user from likes array
+        post.likes.pull(userId);
+        await post.save();
+
+        return res.status(200).json({ success: true, message: "Post unliked successfully.", post });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Error unliking post.", error });
+    }
+};
+
+
 exports.commentOnPost = async (req, res) => {
     try {
         const { postId } = req.params;
@@ -117,11 +179,44 @@ exports.commentOnPost = async (req, res) => {
             return res.status(404).json({ success: false, message: "Post not found." });
         }
 
-        post.comments.push({ user: userId, text });
+        // Add comment to post
+        post.comments.push({ user: userId, text, date: Date.now() });
         await post.save();
 
         return res.status(201).json({ success: true, message: "Comment added successfully.", post });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Error commenting on post.", error });
+    }
+};
+
+
+exports.deleteCommentOnPost = async (req, res) => {
+    try {
+        const { postId, commentId } = req.params;
+        const userId = req.user.id;
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ success: false, message: "Post not found." });
+        }
+
+        // Find the comment
+        const comment = post.comments.id(commentId);
+        if (!comment) {
+            return res.status(404).json({ success: false, message: "Comment not found." });
+        }
+
+        // Check if the user is the owner of the comment
+        if (comment.user.toString() !== userId) {
+            return res.status(403).json({ success: false, message: "Not authorized to delete this comment." });
+        }
+
+        // Remove comment
+        comment.remove();
+        await post.save();
+
+        return res.status(200).json({ success: true, message: "Comment deleted successfully.", post });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Error deleting comment.", error });
     }
 };
