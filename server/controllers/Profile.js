@@ -1,42 +1,68 @@
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary'); // Adjust path if needed
+const fs = require('fs');
+const Profile = require('../models/Profile');
 
-// Update Profile
 exports.updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { firstName, lastName, contactNumber } = req.body;
+        const { firstName, lastName, contactNumber, gender, dateOfBirth, about } = req.body;
 
-        const user = await User.findById(userId);
+        // Find the user by ID
+        const user = await User.findById(userId).populate('additionalDetails');
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found." });
         }
 
+        // Update User fields
         user.firstName = firstName || user.firstName;
         user.lastName = lastName || user.lastName;
         user.contactNumber = contactNumber || user.contactNumber;
 
-        await user.save();
+        // Update Profile fields
+        const profile = await Profile.findById(user.additionalDetails);
+        if (!profile) {
+            return res.status(404).json({ success: false, message: "Profile not found." });
+        }
 
-        return res.status(200).json({ success: true, message: "Profile updated successfully.", user });
+        profile.gender = gender || profile.gender;
+        profile.dateOfBirth = dateOfBirth || profile.dateOfBirth;
+        profile.about = about || profile.about;
+
+        // Save both documents
+        await user.save();
+        await profile.save();
+
+        return res.status(200).json({ success: true, message: "Profile updated successfully.", user, profile });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Error updating profile.", error });
     }
 };
+
 
 // Delete Account
 exports.deleteAccount = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const user = await User.findById(userId);
+        // Find the user by ID and populate the additionalDetails field to get the profile ID
+        const user = await User.findById(userId).populate('additionalDetails');
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        await user.remove();
-        return res.status(200).json({ success: true, message: "Account deleted successfully." });
+        // Find the associated profile and delete it
+        const profileId = user.additionalDetails;
+        if (profileId) {
+            await Profile.findByIdAndDelete(profileId);
+        }
+
+        // Delete the user
+        await User.findByIdAndDelete(userId);
+
+        return res.status(200).json({ success: true, message: "Account and profile deleted successfully." });
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Error deleting account.", error });
+        return res.status(500).json({ success: false, message: "Error deleting account and profile.", error });
     }
 };
 
@@ -58,15 +84,40 @@ exports.getUserDetails = async (req, res) => {
 exports.updateDisplayPicture = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { imageUrl } = req.body; // Assuming the image URL is sent in the request body
+        const { file } = req; // File from multer
+
+        if (!file) {
+            return res.status(400).json({ success: false, message: "No file uploaded." });
+        }
+        
 
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        user.image = imageUrl || user.image;
+        // Delete old image from Cloudinary if it's not the default image
+        if (user.image && !user.image.startsWith('https://api.dicebear.com')) {
+            const publicId = user.image.split('/').pop().split('.')[0];
+            await cloudinary.destroyImage(publicId);
+        }
+        
+
+        // Upload new image to Cloudinary
+        const result = await cloudinary.uploadImage(file.path);
+
+        // Update user image
+        user.image = result.secure_url;
         await user.save();
+       // console.log("*****************")
+
+        // Optionally, delete local file
+        try{
+        fs.unlinkSync(file.path);
+        }
+        catch(error){
+            //console.log(error);
+        }
 
         return res.status(200).json({ success: true, message: "Display picture updated successfully.", user });
     } catch (error) {
