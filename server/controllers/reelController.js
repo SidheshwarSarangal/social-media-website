@@ -6,6 +6,7 @@ exports.createReel = async (req, res) => {
     try {
         const userId = req.user.id;
         const file = req.file; // Assuming multer is used for file uploads
+        const { caption } = req.body;
 
         if (!file) {
             return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -16,6 +17,7 @@ exports.createReel = async (req, res) => {
         const reel = new Reel({
             user: userId,
             media: uploadResult.secure_url,
+            caption,
         });
 
         await reel.save();
@@ -79,16 +81,22 @@ exports.deleteReel = async (req, res) => {
         const userId = req.user.id;
 
         const reel = await Reel.findById(reelId);
+
         if (!reel) {
             return res.status(404).json({ success: false, message: 'Reel not found.' });
         }
+
 
         if (reel.user.toString() !== userId) {
             return res.status(403).json({ success: false, message: 'Unauthorized.' });
         }
 
+
         await destroyVideo(reel.media); // Delete from Cloudinary
-        await reel.remove();
+
+        await reel.deleteOne();
+      //  console.log("************")
+
 
         return res.status(200).json({ success: true, message: 'Reel deleted successfully.' });
     } catch (error) {

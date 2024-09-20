@@ -9,10 +9,10 @@ const upload = multer({ dest: 'uploads/' }); // Assuming this is your multer con
 router.post('/', authMiddleware.auth, upload.single('file'), reelController.createReel);
 
 // Like Reel
-router.post('/:reelId/like', authMiddleware.auth, reelController.likeReel);
+router.post('/like/:reelId', authMiddleware.auth, reelController.likeReel);
 
 // Unlike Reel
-router.post('/:reelId/unlike', authMiddleware.auth, reelController.unlikeReel);
+router.post('/unlike/:reelId', authMiddleware.auth, reelController.unlikeReel);
 
 // Delete Reel
 router.delete('/:reelId', authMiddleware.auth, reelController.deleteReel);
