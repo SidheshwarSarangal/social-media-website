@@ -28,14 +28,16 @@ module.exports = router;*/
 
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middlewares/auth');
 const chatController = require('../controllers/chatcontroller');
-const authMiddleware = require('../middleware/authMiddleware');
 
-// Route to create or get a chat
-router.post('/chat', authMiddleware.auth, chatController.createOrGetChat);
+// Get or create a chat
+router.post('/', authMiddleware.auth, chatController.getChat);
 
-// Route to send a message
-router.post('/message/:chatId', authMiddleware.auth, chatController.sendMessage);
+// Send a message
+router.post('/send', authMiddleware.auth, chatController.sendMessage);
+
+// Get messages for a chat
+router.get('/messages/:chatId', authMiddleware.auth, chatController.getMessages);
 
 module.exports = router;
-

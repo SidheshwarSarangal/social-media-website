@@ -114,70 +114,87 @@ exports.getChatMessages = async (req, res) => {
 
 const Chat = require('../models/Chat');
 const User = require('../models/User');
-const cloudinary = require('../config/cloudinary'); // Ensure proper path
 
-// Create or get chat
-exports.createOrGetChat = async (req, res) => {
+// Create or retrieve a chat
+exports.getChat = async (req, res) => {
     try {
-        const { userId } = req.body;
-        const currentUser = req.user.id;
+        const userId = req.user.id;
+        const { recipientId } = req.body;
 
-        if (userId === currentUser) {
-            return res.status(400).json({ success: false, message: 'Cannot chat with yourself.' });
+        // Check if recipient exists and if they are followed
+        const recipient = await User.findById(recipientId);
+       
+        const USER = await User.findById(userId);
+
+        if (!recipient) {
+            return res.status(403).json({ success: false, message: "You cannot chat with this user." });
         }
 
-        const currentUserData = await User.findById(currentUser);
-        const otherUserData = await User.findById(userId);
-
-        if (!currentUserData.following.includes(userId) || !otherUserData.following.includes(currentUser)) {
-            return res.status(403).json({ success: false, message: 'Both users must follow each other to start a chat.' });
+        if (!USER.following.includes(recipientId)) {
+            return res.status(403).json({ success: false, message: "You should follow him/her first"});
         }
 
-        let chat = await Chat.findOne({ participants: { $all: [currentUser, userId] } });
+        if (!USER.followers.includes(recipientId)) {
+            return res.status(403).json({ success: false, message: "You cannot chat. he/she does not follow you"});
+        }
 
+        /*
+        console.log(recipient.following);
+        console.log(USER.following.includes(recipientId));
+        if (!recipient || ! USER.following.includes(recipientId)) {
+            return res.status(403).json({ success: false, message: "You cannot chat with this user." });
+        }
+        console.log("-------");
+        */
+ 
+        // Retrieve or create a chat
+        let chat = await Chat.findOne({ participants: { $all: [userId, recipientId] } });
         if (!chat) {
-            chat = new Chat({ participants: [currentUser, userId] });
-            await chat.save();
+            chat = await Chat.create({ participants: [userId, recipientId] });
         }
 
-        res.status(200).json({ success: true, chat });
+        return res.status(200).json({ success: true, chat });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error creating or fetching chat.', error });
+        return res.status(500).json({ success: false, message: "Error retrieving chat.", error });
     }
 };
 
-// Send message
+// Send a message
 exports.sendMessage = async (req, res) => {
     try {
-        const { chatId } = req.params;
-        const { text, media } = req.body;
+        const { chatId, text } = req.body;
         const userId = req.user.id;
 
+        // Validate chat existence and user participation
         const chat = await Chat.findById(chatId);
-        if (!chat) {
-            return res.status(404).json({ success: false, message: 'Chat not found.' });
+        if (!chat || !chat.participants.includes(userId)) {
+            return res.status(403).json({ success: false, message: "You cannot send messages in this chat." });
         }
 
-        if (!chat.participants.includes(userId)) {
-            return res.status(403).json({ success: false, message: 'User not part of this chat.' });
-        }
-
-        let mediaUrl = null;
-        if (media) {
-            const result = await cloudinary.uploader.upload(media.path);
-            mediaUrl = result.secure_url;
-        }
-
-        chat.messages.push({
-            sender: userId,
-            text,
-            media: mediaUrl ? { url: mediaUrl, type: media.type } : null,
-            timestamp: Date.now()
-        });
-
+        const message = { sender: userId, text };
+        chat.messages.push(message);
         await chat.save();
-        res.status(201).json({ success: true, message: 'Message sent successfully.', chat });
+
+        return res.status(200).json({ success: true, message: "Message sent.", chat });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Error sending message.', error });
+        return res.status(500).json({ success: false, message: "Error sending message.", error });
+    }
+};
+
+// Get messages for a chat
+exports.getMessages = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const userId = req.user.id;
+
+        // Validate chat existence and user participation
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.participants.includes(userId)) {
+            return res.status(403).json({ success: false, message: "You cannot view messages in this chat." });
+        }
+
+        return res.status(200).json({ success: true, messages: chat.messages });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Error retrieving messages.", error });
     }
 };

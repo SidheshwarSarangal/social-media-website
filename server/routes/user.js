@@ -32,6 +32,10 @@ const {
 } = require("../controllers/ResetPassword")
 
 
+const {
+    followUser,
+    unfollowUser
+} = require("../controllers/Follow")
 
 router.post("/login",login)
 
@@ -57,5 +61,8 @@ router.post('/like/:postId', authMiddleware.auth, postController.likePost);
 router.post('/unlike/:postId', authMiddleware.auth, postController.unlikePost);
 router.post('/comment/:postId', authMiddleware.auth, check('text').notEmpty().withMessage('Text is required'), postController.commentOnPost);
 router.delete('/comment/:postId/:commentId', authMiddleware.auth, postController.deleteCommentOnPost);
+router.post('/follow/:userId', authMiddleware.auth, followUser);
+router.delete('/unfollow/:userId', authMiddleware.auth, unfollowUser);
+
 
 module.exports = router;
