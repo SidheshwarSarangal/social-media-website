@@ -3,9 +3,11 @@
 It may happen that the node modules get currupted with time so you need to remove and then reinstall them in both main repo and server folder 
 
 command for removing :  
+
     rm -rf node_modules package-lock.json
     
 command for installing: 
+
     npm install
 
 It may also happen that permissions are denied for sertain packages by the operating system so you need to grant the system the permissions.
