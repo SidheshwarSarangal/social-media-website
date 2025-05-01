@@ -2,6 +2,8 @@
 
 Working Video: [Link](https://drive.google.com/file/d/1fQHmYI_pEkLQ7-bsPQlJXyolkSrzSmmL/view)
 
+---
+
 ### node modules should be reinstalled
 
 It may happen that the node modules get currupted with time so you need to remove and then reinstall them in both main repo and server folder 
@@ -22,6 +24,8 @@ If it is ok with you then try to grant all the permissions with commands :
     sudo chmod -R 777 ~/.npm
     
 These are for Linux
+
+---
 
 ### `npm run dev' to start both the backend and frontend
 
