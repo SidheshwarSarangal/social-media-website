@@ -1,10 +1,16 @@
-### Working Video
+# 📱 Full Stack Social Media Website
+
+A complete **social media web application** built using **Express.js** for the backend and **React.js** for the frontend, implementing major features like authentication, content sharing, chatting, and more.
+
+---
+
+## Working Video
 
 Working Video: [Link](https://drive.google.com/file/d/1fQHmYI_pEkLQ7-bsPQlJXyolkSrzSmmL/view)
 
 ---
 
-### node modules should be reinstalled
+## node modules should be reinstalled
 
 It may happen that the node modules get currupted with time so you need to remove and then reinstall them in both main repo and server folder 
 
@@ -30,10 +36,6 @@ These are for Linux
 ### `npm run dev' to start both the backend and frontend
 
 In the main repo run this command `npm run dev` and start the server and the frontend.
-
-# 📱 Full Stack Social Media Website
-
-A complete **social media web application** built using **Express.js** for the backend and **React.js** for the frontend, implementing major features like authentication, content sharing, chatting, and more.
 
 ---
 
